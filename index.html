@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andrew TTS Pro Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0e14;
+  --surface: rgba(20, 25, 35, 0.6);
+  --surface-glass: rgba(30, 36, 48, 0.7);
+  --border: rgba(100, 120, 160, 0.15);
+  --text: #e8ecf0;
+  --text-dim: #8892a0;
+  --accent: #4c9aff;
+  --accent-dim: rgba(76, 154, 255, 0.2);
+  --success: #36b37e;
+  --warning: #ffab00;
+  --danger: #ff5630;
+  --fast-mode: #ff6b6b;
+  --balanced-mode: #4ecdc4;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #0a0e14 0%, #141824 100%);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(76, 154, 255, 0.05) 0%, transparent 70%);
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(30px, -30px) rotate(180deg); }
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 30px 20px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+}
+
+.logo {
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4c9aff 0%, #67b8ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+}
+
+.tagline {
+  font-size: 18px;
+  color: var(--text-dim);
+}
+
+.mode-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 30px;
+  justify-content: center;
+}
+
+.mode-btn {
+  flex: 1;
+  max-width: 200px;
+  padding: 20px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-glass);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.mode-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.mode-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 30px rgba(76, 154, 255, 0.3);
+}
+
+.mode-btn.fast.active {
+  border-color: var(--fast-mode);
+  background: rgba(255, 107, 107, 0.1);
+  box-shadow: 0 0 30px rgba(255, 107, 107, 0.2);
+}
+
+.mode-btn.balanced.active {
+  border-color: var(--balanced-mode);
+  background: rgba(78, 205, 196, 0.1);
+  box-shadow: 0 0 30px rgba(78, 205, 196, 0.2);
+}
+
+.mode-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.mode-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mode-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.input-section {
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-dim);
+}
+
+textarea, input[type="text"] {
+  width: 100%;
+  padding: 16px;
+  background: rgba(10, 14, 20, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+
+textarea:focus, input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+textarea {
+  min-height: 200px;
+}
+
+.btn {
+  padding: 16px 32px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, var(--accent) 0%, #67b8ff 100%);
+  color: white;
+  width: 100%;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(76, 154, 255, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.progress-section {
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 30px;
+  margin-bottom: 30px;
+  display: none;
+}
+
+.progress-section.active {
+  display: block;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.status-queued { background: rgba(255, 171, 0, 0.2); color: var(--warning); }
+.status-in_progress { background: rgba(76, 154, 255, 0.2); color: var(--accent); }
+.status-completed { background: rgba(54, 179, 126, 0.2); color: var(--success); }
+.status-failed { background: rgba(255, 86, 48, 0.2); color: var(--danger); }
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, #67b8ff 100%);
+  transition: width 0.5s ease;
+  box-shadow: 0 0 20px rgba(76, 154, 255, 0.5);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.stat-card {
+  background: rgba(10, 14, 20, 0.5);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--accent) 0%, #67b8ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.releases-section {
+  margin-top: 40px;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.release-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 16px;
+  transition: transform 0.3s ease;
+}
+
+.release-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+}
+
+.release-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.release-meta {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.release-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(10, 14, 20, 0.5);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+audio {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 768px) {
+  .mode-selector { flex-direction: column; }
+  .mode-btn { max-width: none; }
+  .stats-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">🎙️ Andrew TTS Pro</div>
+    <div class="tagline">High-speed parallel text-to-speech engine</div>
+  </div>
+
+  <div class="mode-selector">
+    <div class="mode-btn fast active" onclick="selectMode('fast')">
+      <div class="mode-icon">⚡</div>
+      <div class="mode-title">Fast Mode</div>
+      <div class="mode-desc">Max 20 workers · Full speed</div>
+    </div>
+    <div class="mode-btn balanced" onclick="selectMode('balanced')">
+      <div class="mode-icon">⚖️</div>
+      <div class="mode-title">Balanced Mode</div>
+      <div class="mode-desc">Max 10 workers · Run 2 novels</div>
+    </div>
+  </div>
+
+  <div class="input-section">
+    <div class="form-group">
+      <label for="novelText">Novel Text</label>
+      <textarea id="novelText" placeholder="Paste your novel text here..."></textarea>
+    </div>
+    <div class="form-group">
+      <label for="novelName">Novel Name (optional)</label>
+      <input type="text" id="novelName" placeholder="My Novel Chapter 1">
+    </div>
+    <button class="btn" onclick="generateAudio()">Generate Audio</button>
+  </div>
+
+  <div class="progress-section" id="progressSection">
+    <span class="status-badge" id="statusBadge">⏳ In Progress</span>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statChunks">0/0</div>
+        <div class="stat-label">Chunks Complete</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statWorkers">0/0</div>
+        <div class="stat-label">Active Workers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statEta">--</div>
+        <div class="stat-label">ETA</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statElapsed">0m 0s</div>
+        <div class="stat-label">Elapsed Time</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="releases-section">
+    <div class="section-title">📚 Audio Library</div>
+    <div id="releasesList"></div>
+  </div>
+</div>
+
+<script>
+let currentMode = 'fast';
+let pollInterval = null;
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector(`.mode-btn.${mode}`).classList.add('active');
+}
+
+async function generateAudio() {
+  const text = document.getElementById('novelText').value.trim();
+  const novelName = document.getElementById('novelName').value.trim();
+
+  if (!text) {
+    alert('Please paste some text first!');
+    return;
+  }
+
+  const btn = document.querySelector('.btn');
+  btn.disabled = true;
+  btn.textContent = 'Triggering workflow...';
+
+  try {
+    const response = await fetch('/.netlify/functions/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, novelName, mode: currentMode })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      document.getElementById('progressSection').classList.add('active');
+      startPolling(data.runId);
+      btn.textContent = 'Running...';
+    } else {
+      alert('Failed to start: ' + data.error);
+      btn.disabled = false;
+      btn.textContent = 'Generate Audio';
+    }
+  } catch (error) {
+    alert('Error: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = 'Generate Audio';
+  }
+}
+
+function startPolling(runId) {
+  if (pollInterval) clearInterval(pollInterval);
+
+  pollInterval = setInterval(async () => {
+    try {
+      const response = await fetch(`/.netlify/functions/progress/${runId}`);
+      const data = await response.json();
+
+      updateProgress(data);
+
+      if (data.status === 'completed' || data.status === 'failed') {
+        clearInterval(pollInterval);
+        document.querySelector('.btn').disabled = false;
+        document.querySelector('.btn').textContent = 'Generate Audio';
+        loadReleases();
+      }
+    } catch (error) {
+      console.error('Poll error:', error);
+    }
+  }, 5000);
+}
+
+function updateProgress(data) {
+  // Status badge
+  const badge = document.getElementById('statusBadge');
+  badge.className = `status-badge status-${data.status}`;
+  badge.textContent = data.status === 'in_progress' ? '⏳ In Progress' :
+                      data.status === 'completed' ? '✅ Completed' :
+                      data.status === 'failed' ? '❌ Failed' : '⏸️ Queued';
+
+  // Progress bar
+  const progress = data.chunks ? (data.chunks.done / data.chunks.total * 100) : 0;
+  document.getElementById('progressFill').style.width = progress + '%';
+
+  // Stats
+  document.getElementById('statChunks').textContent = data.chunks ? `${data.chunks.done}/${data.chunks.total}` : '0/0';
+  document.getElementById('statWorkers').textContent = data.workers ? `${data.workers.active}/${data.workers.total}` : '0/0';
+  document.getElementById('statEta').textContent = data.eta || '--';
+  document.getElementById('statElapsed').textContent = data.elapsed || '0m 0s';
+}
+
+async function loadReleases() {
+  const list = document.getElementById('releasesList');
+  list.innerHTML = '<div class="loading">Loading releases...</div>';
+
+  try {
+    const response = await fetch('/.netlify/functions/releases');
+    const releases = await response.json();
+
+    if (releases.length === 0) {
+      list.innerHTML = '<div class="loading">No releases yet. Generate your first audiobook!</div>';
+      return;
+    }
+
+    list.innerHTML = releases.map(r => `
+      <div class="release-card">
+        <div class="release-title">${r.title}</div>
+        <div class="release-meta">${new Date(r.date).toLocaleDateString()} · ${r.size}</div>
+        <div class="release-actions">
+          <a href="${r.downloadUrl}" class="btn-secondary" download>⬇️ Download</a>
+        </div>
+        <audio controls src="${r.downloadUrl}"></audio>
+      </div>
+    `).join('');
+  } catch (error) {
+    list.innerHTML = '<div class="loading">Failed to load releases</div>';
+  }
+}
+
+// Load releases on page load
+loadReleases();
+</script>
+
+</body>
+</html>
