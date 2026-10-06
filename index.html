@@ -40,6 +40,19 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
 .mode .title{font:700 16px var(--sans);margin-bottom:4px}
 .mode .desc{font-size:12px;color:var(--tv)}
 
+/* Output format selector */
+.output-section{margin:20px 0;padding:20px;background:var(--s2);border-radius:20px}
+.section-label{font:600 13px var(--sans);color:var(--tv);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.output-opts{display:flex;gap:10px;margin-bottom:16px}
+.radio-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--s1);border:2px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;transition:all .2s}
+.radio-opt:hover{border-color:var(--blue)}
+.radio-opt.active{border-color:var(--blue);background:rgba(138,180,248,.08)}
+.radio-opt .opt-icon{font-size:24px}
+.radio-opt .opt-text{font:600 14px var(--sans)}
+.video-settings{margin-top:12px}
+.video-settings select{width:100%;background:var(--s1);color:var(--tx);border:2px solid transparent;border-radius:16px;padding:24px 18px 10px;font:400 15px var(--sans);cursor:pointer}
+.video-settings select:focus{outline:0;border-color:var(--blue)}
+
 .composer{background:var(--s1);border:1px solid var(--line);border-radius:32px;padding:22px}
 .field{position:relative;margin-bottom:12px}
 .field input,.field textarea{width:100%;background:var(--s2);color:var(--tx);border:2px solid transparent;border-radius:20px;padding:28px 18px 10px;font:400 16px var(--sans);resize:vertical}
@@ -123,6 +136,37 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
     <div class="composer">
     <div class="field"><input id="name" placeholder=" " autocomplete="off"><label for="name">Novel name (optional)</label></div>
     <div class="field"><textarea id="text" rows="10" placeholder=" "></textarea><label for="text">Novel text</label></div>
+
+    <div class="output-section">
+      <div class="section-label">Output format</div>
+      <div class="output-opts">
+        <label class="radio-opt active" data-type="audio">
+          <input type="radio" name="output" value="audio" checked hidden>
+          <span class="opt-icon">🎵</span>
+          <span class="opt-text">Audio only</span>
+        </label>
+        <label class="radio-opt" data-type="video">
+          <input type="radio" name="output" value="video" hidden>
+          <span class="opt-icon">🎬</span>
+          <span class="opt-text">Video</span>
+        </label>
+      </div>
+      <div class="video-settings" id="videoSettings" hidden>
+        <div class="field" style="margin-bottom:0">
+          <select id="resolution">
+            <option value="original">Original quality</option>
+            <option value="1080">1080p (Full HD)</option>
+            <option value="720" selected>720p (HD)</option>
+            <option value="480">480p (SD)</option>
+            <option value="360">360p</option>
+            <option value="240">240p</option>
+            <option value="144">144p</option>
+          </select>
+          <label for="resolution">Video resolution</label>
+        </div>
+      </div>
+    </div>
+
     <div class="row">
       <label class="btn tonal">Upload .txt<input id="file" type="file" accept=".txt" hidden></label>
       <span class="hint" id="size">0 KB / 10000 KB</span>
@@ -152,13 +196,24 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
 
 <script>
 const $ = (id) => document.getElementById(id);
-let mode = localStorage.getItem("tts_mode") || "fast", runId = null, samples = [], timer = null, last = null;
+let mode = localStorage.getItem("tts_mode") || "fast", outputType = "audio", resolution = "720", runId = null, samples = [], timer = null, last = null;
 
 function selectMode(m) {
   mode = m;
   localStorage.setItem("tts_mode", m);
   document.querySelectorAll(".mode").forEach(e => e.classList.toggle("active", e.classList.contains(m)));
 }
+
+/* Output format selector */
+document.querySelectorAll(".radio-opt").forEach(opt => {
+  opt.onclick = () => {
+    outputType = opt.dataset.type;
+    document.querySelectorAll(".radio-opt").forEach(o => o.classList.toggle("active", o === opt));
+    $("videoSettings").hidden = outputType !== "video";
+    $("go").textContent = outputType === "video" ? "Generate video" : "Generate audio";
+  };
+});
+$("resolution").onchange = (e) => { resolution = e.target.value; };
 
 function toast(m){const s=$("snack");s.textContent=m;s.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>s.classList.remove("show"),5000)}
 async function call(path, opts = {}) {
@@ -192,11 +247,11 @@ $("go").onclick = async () => {
   $("go").disabled = true; $("go").textContent = "Starting…";
   if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
   try {
-    const d = await call("/trigger", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: $("text").value, novelName: $("name").value.trim(), mode }) });
+    const d = await call("/trigger", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: $("text").value, novelName: $("name").value.trim(), mode, outputType, resolution }) });
     runId = d.runId; samples = []; last = null; lib = null;
     if (runId) poll(); else toast("Workflow triggered, check back in a minute.");
   } catch (e) { toast(e.message); }
-  $("go").textContent = "Generate audio"; check();
+  $("go").textContent = outputType === "video" ? "Generate video" : "Generate audio"; check();
 };
 
 /* progress */
