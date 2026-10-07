@@ -108,7 +108,25 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
 <div class="wrap">
   <div class="bar">
     <div class="logo">
-      <svg viewBox="0 0 36 36" aria-hidden="true"><rect x="3" y="14" width="5" height="8" rx="2.5" fill="#f28b82"/><rect x="11" y="6" width="5" height="24" rx="2.5" fill="#fdd663"/><rect x="19" y="10" width="5" height="16" rx="2.5" fill="#81c995"/><rect x="27" y="3" width="5" height="30" rx="2.5" fill="#8ab4f8"/></svg>
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#8ab4f8;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#81c995;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <!-- Microphone body -->
+        <rect x="20" y="12" width="8" height="14" rx="4" fill="url(#grad1)"/>
+        <!-- Microphone base -->
+        <path d="M 18 28 Q 18 34 24 34 Q 30 34 30 28" stroke="url(#grad1)" stroke-width="2" fill="none"/>
+        <line x1="24" y1="34" x2="24" y2="38" stroke="url(#grad1)" stroke-width="2"/>
+        <line x1="18" y1="38" x2="30" y2="38" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"/>
+        <!-- Sound waves -->
+        <path d="M 12 18 Q 10 24 12 30" stroke="#fdd663" stroke-width="2" fill="none" opacity="0.6"/>
+        <path d="M 8 16 Q 5 24 8 32" stroke="#f28b82" stroke-width="2" fill="none" opacity="0.4"/>
+        <path d="M 36 18 Q 38 24 36 30" stroke="#fdd663" stroke-width="2" fill="none" opacity="0.6"/>
+        <path d="M 40 16 Q 43 24 40 32" stroke="#f28b82" stroke-width="2" fill="none" opacity="0.4"/>
+      </svg>
       Andrew TTS
     </div>
     <div class="chip">by <b>Cracked Player</b></div>
