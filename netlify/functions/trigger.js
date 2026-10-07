@@ -1,9 +1,9 @@
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
 
 const GITHUB_TOKEN = process.env.GITHUB_PAT;
 const ENGINE_REPO = 'hanshu1202/andrew-tts-engine';
 
-export async function handler(event) {
+exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
@@ -119,4 +119,4 @@ export async function handler(event) {
       body: JSON.stringify({ error: error.message })
     };
   }
-}
+};

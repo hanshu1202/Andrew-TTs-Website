@@ -1,6 +1,8 @@
+const fetch = require('node-fetch');
+
 const AUDIO_REPO = 'hanshu1202/andrew-tts-audio';
 
-export async function handler(event) {
+exports.handler = async function(event) {
   try {
     const headers = {
       'Accept': 'application/vnd.github+json',
@@ -46,4 +48,4 @@ export async function handler(event) {
       body: JSON.stringify({ error: error.message })
     };
   }
-}
+};
