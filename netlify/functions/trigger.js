@@ -63,7 +63,7 @@ exports.handler = async function(event) {
     }
 
     // Trigger workflow
-    const workflowResp = await fetch(`https://api.github.com/repos/${ENGINE_REPO}/actions/workflows/TTS_Dynamic_Batch.yml/dispatches`, {
+    const workflowResp = await fetch(`https://api.github.com/repos/${ENGINE_REPO}/actions/workflows/TTS_Dynamic_Batch_Video.yml/dispatches`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${GITHUB_TOKEN}`,
