@@ -9,7 +9,7 @@ exports.handler = async function(event) {
   }
 
   try {
-    const { text, novelName, mode, outputType, resolution } = JSON.parse(event.body);
+    const { text, novelName, mode, outputType } = JSON.parse(event.body);
 
     if (!text || text.length < 100) {
       return {
@@ -76,8 +76,7 @@ exports.handler = async function(event) {
         inputs: {
           novel_name: novelName || '',
           mode: mode || 'fast',
-          output_type: outputType || 'audio',
-          resolution: resolution || '720'
+          output_type: outputType || 'audio'
         }
       })
     });

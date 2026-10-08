@@ -49,9 +49,6 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
 .radio-opt.active{border-color:var(--blue);background:rgba(138,180,248,.08)}
 .radio-opt .opt-icon{font-size:24px}
 .radio-opt .opt-text{font:600 14px var(--sans)}
-.video-settings{margin-top:12px}
-.video-settings select{width:100%;background:var(--s1);color:var(--tx);border:2px solid transparent;border-radius:16px;padding:24px 18px 10px;font:400 15px var(--sans);cursor:pointer}
-.video-settings select:focus{outline:0;border-color:var(--blue)}
 
 .composer{background:var(--s1);border:1px solid var(--line);border-radius:32px;padding:22px}
 .field{position:relative;margin-bottom:12px}
@@ -86,7 +83,6 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
 .stat.warn b{color:var(--yellow)}
 .jobs{list-style:none;margin:18px 0 0;padding:0;font-size:14px;color:var(--tv)}
 .jobs li{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line)}
-
 .rel{background:var(--s1);border:1px solid var(--line);border-radius:28px;padding:20px 22px;margin-bottom:14px}
 .rel h3{margin:0;font:700 20px var(--sans)}
 .rel p{margin:2px 0 0;color:var(--tv);font-size:14px}
@@ -115,13 +111,10 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
             <stop offset="100%" style="stop-color:#81c995;stop-opacity:1" />
           </linearGradient>
         </defs>
-        <!-- Microphone body -->
         <rect x="20" y="12" width="8" height="14" rx="4" fill="url(#grad1)"/>
-        <!-- Microphone base -->
         <path d="M 18 28 Q 18 34 24 34 Q 30 34 30 28" stroke="url(#grad1)" stroke-width="2" fill="none"/>
         <line x1="24" y1="34" x2="24" y2="38" stroke="url(#grad1)" stroke-width="2"/>
         <line x1="18" y1="38" x2="30" y2="38" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"/>
-        <!-- Sound waves -->
         <path d="M 12 18 Q 10 24 12 30" stroke="#fdd663" stroke-width="2" fill="none" opacity="0.6"/>
         <path d="M 8 16 Q 5 24 8 32" stroke="#f28b82" stroke-width="2" fill="none" opacity="0.4"/>
         <path d="M 36 18 Q 38 24 36 30" stroke="#fdd663" stroke-width="2" fill="none" opacity="0.6"/>
@@ -169,20 +162,6 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
           <span class="opt-text">Video</span>
         </label>
       </div>
-      <div class="video-settings" id="videoSettings" hidden>
-        <div class="field" style="margin-bottom:0">
-          <select id="resolution">
-            <option value="original">Original quality</option>
-            <option value="1080">1080p (Full HD)</option>
-            <option value="720" selected>720p (HD)</option>
-            <option value="480">480p (SD)</option>
-            <option value="360">360p</option>
-            <option value="240">240p</option>
-            <option value="144">144p</option>
-          </select>
-          <label for="resolution">Video resolution</label>
-        </div>
-      </div>
     </div>
 
     <div class="row">
@@ -213,143 +192,151 @@ h1{margin:0;font-size:clamp(42px,10vw,84px);line-height:.94;letter-spacing:-.035
 <div id="snack" role="alert"></div>
 
 <script>
-const $ = (id) => document.getElementById(id);
-const urlParams = new URLSearchParams(window.location.search);
-let mode = localStorage.getItem("tts_mode") || "fast", outputType = "audio", resolution = "720", runId = urlParams.get("run") || localStorage.getItem("tts_run_id"), samples = [], timer = null, last = null;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW registration failed:', e));
+  }
 
-function selectMode(m) {
-  mode = m;
-  localStorage.setItem("tts_mode", m);
-  document.querySelectorAll(".mode").forEach(e => e.classList.toggle("active", e.classList.contains(m)));
-}
-
-/* Output format selector */
-document.querySelectorAll(".radio-opt").forEach(opt => {
-  opt.onclick = () => {
-    outputType = opt.dataset.type;
-    document.querySelectorAll(".radio-opt").forEach(o => o.classList.toggle("active", o === opt));
-    $("videoSettings").hidden = outputType !== "video";
-    $("go").textContent = outputType === "video" ? "Generate video" : "Generate audio";
-  };
-});
-$("resolution").onchange = (e) => { resolution = e.target.value; };
-
-function toast(m){const s=$("snack");s.textContent=m;s.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>s.classList.remove("show"),5000)}
-async function call(path, opts = {}) {
-  const r = await fetch("/.netlify/functions" + path, opts);
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || "Request failed (" + r.status + ")");
-  return d;
-}
-const dur = (s) => { s = Math.max(0, Math.round(s)); const h = s/3600|0, m = (s%3600)/60|0; return (h?h+"h ":"")+(m?m+"m ":"")+(s%60)+"s"; };
-const size = (b) => b > 1e9 ? (b/1e9).toFixed(1)+" GB" : b > 1e6 ? (b/1e6).toFixed(1)+" MB" : Math.round(b/1e3)+" KB";
-
-/* idle hero waveform */
-for (let i = 0; i < 56; i++) { const b = document.createElement("i"); b.style.setProperty("--c", ["#f28b82","#fdd663","#81c995","#8ab4f8"][Math.floor(i / 14)]); b.style.setProperty("--d", (-(i * 0.23 % 1.6)).toFixed(2) + "s"); $("idle").append(b); }
-/* tabs */
-function tab(which){
-  $("run").hidden = which !== "run"; $("lib").hidden = which !== "lib";
-  $("t-run").setAttribute("aria-selected", which === "run"); $("t-lib").setAttribute("aria-selected", which === "lib");
-  if (which === "lib") loadLib();
-}
-$("t-run").onclick = () => tab("run"); $("t-lib").onclick = () => tab("lib");
-
-/* input */
-function check(){
-  const kb = new Blob([$("text").value]).size / 1e3;
-  $("size").textContent = Math.round(kb) + " KB / 10000 KB"; $("size").classList.toggle("bad", kb > 10000);
-  $("go").disabled = !$("text").value.trim() || kb > 10000;
-}
-$("text").oninput = check;
-$("file").onchange = async (e) => { const f = e.target.files[0]; if (f) { $("text").value = await f.text(); check(); } };
-$("go").onclick = async () => {
-  $("go").disabled = true; $("go").textContent = "Starting…";
-  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
-  try {
-    const d = await call("/trigger", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: $("text").value, novelName: $("name").value.trim(), mode, outputType, resolution }) });
-    runId = d.runId; samples = []; last = null; lib = null;
-    if (runId) {
-      localStorage.setItem("tts_run_id", runId);
-      // Update URL without reloading page to enable link sharing
-      const newUrl = `${window.location.pathname}?run=${runId}`;
-      window.history.replaceState({}, '', newUrl);
-      poll();
-    } else {
-      toast("Workflow triggered, check back in a minute.");
+  async function notify(title, body) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const reg = await navigator.serviceWorker?.getRegistration();
+      if (reg) await reg.showNotification(title, { body });
+      else new Notification(title, { body });
+    } catch (e) {
+      console.warn('Notification failed:', e);
     }
-  } catch (e) { toast(e.message); }
-  $("go").textContent = outputType === "video" ? "Generate video" : "Generate audio"; check();
-};
-
-/* progress */
-const BARS = 72, PAL = ["#f28b82","#fdd663","#81c995","#8ab4f8"];
-function status(d){ return d.status === "completed" ? (d.conclusion === "success" ? "completed" : "failed") : d.status; }
-const LABEL = { queued: "Queued", in_progress: "In progress", completed: "Completed", failed: "Failed" };
-function render(d){
-  const st = status(d), c = d.chunks;
-  $("prog").hidden = false;
-  $("state").textContent = LABEL[st] || st; $("state").className = "state s-" + st;
-  const end = d.status === "completed" ? new Date(d.updated) : new Date();
-  $("elapsed").textContent = "Elapsed " + dur((end - new Date(d.created)) / 1000);
-  const w = d.jobs.filter((j) => /worker/i.test(j.name));
-  $("workers").textContent = w.filter((j) => j.status === "in_progress").length + "/" + w.length;
-  $("done").textContent = c ? c.done : "–";
-  $("miss").textContent = c ? c.missing.length : "–";
-  $("missBox").title = c && c.missing.length && c.missing.length <= 10 ? "Missing chunks: " + c.missing.join(", ") : "";
-  const pct = c && c.total ? c.done / c.total : (st === "completed" ? 1 : 0);
-  $("pct").textContent = Math.round(pct * 100) + "%";
-  $("count").textContent = c ? c.done + "/" + c.total + " chunks (" + Math.round(pct * 100) + "%)" : "Waiting for coordinator…";
-  const lit = Math.round(pct * BARS), wv = $("wave");
-  if (!wv.children.length) for (let i = 0; i < BARS; i++) {
-    const b = document.createElement("i");
-    b.style.setProperty("--h", (22 + 78 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * .55))) + "%"); b.style.setProperty("--c", PAL[Math.floor(i / BARS * 4)]); wv.append(b);
   }
-  [...wv.children].forEach((b, i) => { b.className = (i < lit ? "on" : "") + (i === lit && st === "in_progress" ? " edge" : ""); });
-  wv.classList.toggle("live", st === "in_progress");
-  /* ETA from last few samples */
-  let eta = "";
-  if (c && st === "in_progress") {
-    samples.push({ t: Date.now(), done: c.done }); samples = samples.slice(-6);
-    const a = samples[0], b = samples[samples.length - 1], rate = (b.done - a.done) / ((b.t - a.t) / 1000 || 1);
-    eta = samples.length < 2 || rate <= 0 ? "ETA calculating…" : "ETA " + dur((c.total - c.done) / rate);
+
+  const $ = (id) => document.getElementById(id);
+  const urlParams = new URLSearchParams(window.location.search);
+  let mode = localStorage.getItem("tts_mode") || "fast", outputType = "audio", runId = urlParams.get("run") || localStorage.getItem("tts_run_id"), samples = [], timer = null, last = null;
+
+  function selectMode(m) {
+    mode = m;
+    localStorage.setItem("tts_mode", m);
+    document.querySelectorAll(".mode").forEach(e => e.classList.toggle("active", e.classList.contains(m)));
   }
-  $("eta").textContent = eta;
-  $("jobs").innerHTML = d.jobs.map((j) => "<li><span>" + j.name.replace(/</g, "&lt;") + "</span><span>" + (j.conclusion || j.status) + "</span></li>").join("");
-  $("runlink").hidden = st !== "failed"; $("runlink").href = d.url;
-  if (last && ["queued","in_progress"].includes(last) && ["completed","failed"].includes(st)) {
-    if ("Notification" in window && Notification.permission === "granted") new Notification("Andrew TTS", { body: "Run " + LABEL[st].toLowerCase() });
+
+  /* Output format selector */
+  document.querySelectorAll(".radio-opt").forEach(opt => {
+    opt.onclick = () => {
+      outputType = opt.dataset.type;
+      document.querySelectorAll(".radio-opt").forEach(o => o.classList.toggle("active", o === opt));
+      $("go").textContent = outputType === "video" ? "Generate video" : "Generate audio";
+    };
+  });
+
+  function toast(m){const s=$("snack");s.textContent=m;s.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>s.classList.remove("show"),5000)}
+  async function call(path, opts = {}) {
+    const r = await fetch("/.netlify/functions" + path, opts);
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "Request failed (" + r.status + ")");
+    return d;
   }
-  last = st;
-  return st;
-}
-async function poll(){
-  clearTimeout(timer);
-  try {
-    const st = render(await call("/progress/" + runId));
-    if (st === "queued" || st === "in_progress") timer = setTimeout(poll, 5000);
-  } catch (e) { toast(e.message); timer = setTimeout(poll, 10000); }
-}
+  const dur = (s) => { s = Math.max(0, Math.round(s)); const h = s/3600|0, m = (s%3600)/60|0; return (h?h+"h ":"")+(m?m+"m ":"")+(s%60)+"s"; };
+  const size = (b) => b > 1e9 ? (b/1e9).toFixed(1)+" GB" : b > 1e6 ? (b/1e6).toFixed(1)+" MB" : Math.round(b/1e3)+" KB";
 
-/* library */
-let lib = null;
-async function loadLib(){
-  if (lib) return;
-  $("lib").innerHTML = '<p class="empty">Loading…</p>';
-  try {
-    lib = await call("/releases");
-    $("lib").innerHTML = '<div class="libhead">Audio library</div>' + (lib.length ? lib.map((r) =>
-      '<article class="rel"><div class="row"><div><h3>' + r.title + '</h3><p>' + new Date(r.date).toLocaleDateString(undefined, { dateStyle: "medium" }) + " · " + r.size +
-      '</p></div><a class="btn fill" href="' + r.downloadUrl + '">Download</a></div>' + '<audio controls preload="none" src="' + r.downloadUrl + '"></audio></article>').join("")
-      : '<p class="empty">No releases yet. Generate your first audio.</p>');
-  } catch (e) { $("lib").innerHTML = ""; toast(e.message); }
-}
+  /* idle hero waveform */
+  for (let i = 0; i < 56; i++) { const b = document.createElement("i"); b.style.setProperty("--c", ["#f28b82","#fdd663","#81c995","#8ab4f8"][Math.floor(i / 14)]); b.style.setProperty("--d", (-(i * 0.23 % 1.6)).toFixed(2) + "s"); $("idle").append(b); }
+  /* tabs */
+  function tab(which){
+    $("run").hidden = which !== "run"; $("lib").hidden = which !== "lib";
+    $("t-run").setAttribute("aria-selected", which === "run"); $("t-lib").setAttribute("aria-selected", which === "lib");
+    if (which === "lib") loadLib();
+  }
+  $("t-run").onclick = () => tab("run"); $("t-lib").onclick = () => tab("lib");
 
-selectMode(mode); // Restore saved mode
+  /* input */
+  function check(){
+    const kb = new Blob([$("text").value]).size / 1e3;
+    $("size").textContent = Math.round(kb) + " KB / 10000 KB"; $("size").classList.toggle("bad", kb > 10000);
+    $("go").disabled = !$("text").value.trim() || kb > 10000;
+  }
+  $("text").oninput = check;
+  $("file").onchange = async (e) => { const f = e.target.files[0]; if (f) { $("text").value = await f.text(); check(); } };
+  $("go").onclick = async () => {
+    $("go").disabled = true; $("go").textContent = "Starting…";
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+    try {
+      const d = await call("/trigger", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: $("text").value, novelName: $("name").value.trim(), mode, outputType }) });
+      runId = d.runId; samples = []; last = null; lib = null;
+      if (runId) {
+        localStorage.setItem("tts_run_id", runId);
+        const newUrl = `${window.location.pathname}?run=${runId}`;
+        window.history.replaceState({}, '', newUrl);
+        poll();
+      } else {
+        toast("Workflow triggered, check back in a minute.");
+      }
+    } catch (e) { toast(e.message); }
+    $("go").textContent = outputType === "video" ? "Generate video" : "Generate audio"; check();
+  };
 
-/* Resume previous run on load */
-if (runId) {
-  poll();
-}
+  /* progress */
+  const BARS = 72, PAL = ["#f28b82","#fdd663","#81c995","#8ab4f8"];
+  function status(d){ return d.status === "completed" ? (d.conclusion === "success" ? "completed" : "failed") : d.status; }
+  const LABEL = { queued: "Queued", in_progress: "In progress", completed: "Completed", failed: "Failed" };
+  function render(d){
+    const st = status(d), c = d.chunks;
+    $("prog").hidden = false;
+    $("state").textContent = LABEL[st] || st; $("state").className = "state s-" + st;
+    const end = d.status === "completed" ? new Date(d.updated) : new Date();
+    $("elapsed").textContent = "Elapsed " + dur((end - new Date(d.created)) / 1000);
+    const w = d.jobs.filter((j) => /worker/i.test(j.name));
+    $("workers").textContent = w.filter((j) => j.status === "in_progress").length + "/" + w.length;
+    $("done").textContent = c ? c.done : "–";
+    $("miss").textContent = c ? c.missing.length : "–";
+    $("missBox").title = c && c.missing.length && c.missing.length <= 10 ? "Missing chunks: " + c.missing.join(", ") : "";
+    const pct = c && c.total ? c.done / c.total : (st === "completed" ? 1 : 0);
+    $("pct").textContent = Math.round(pct * 100) + "%";
+    $("count").textContent = c ? c.done + "/" + c.total + " chunks (" + Math.round(pct * 100) + "%)" : "Waiting for coordinator…";
+    const lit = Math.round(pct * BARS), wv = $("wave");
+    if (!wv.children.length) for (let i = 0; i < BARS; i++) {
+      const b = document.createElement("i");
+      b.style.setProperty("--h", (22 + 78 * Math.abs(Math.sin(i * 1.7) * Math.cos(i * .55))) + "%"); b.style.setProperty("--c", PAL[Math.floor(i / BARS * 4)]); wv.append(b);
+    }
+    [...wv.children].forEach((b, i) => { b.className = (i < lit ? "on" : "") + (i === lit && st === "in_progress" ? " edge" : ""); });
+    wv.classList.toggle("live", st === "in_progress");
+    let eta = "";
+    if (c && st === "in_progress") {
+      samples.push({ t: Date.now(), done: c.done }); samples = samples.slice(-6);
+      const a = samples[0], b = samples[samples.length - 1], rate = (b.done - a.done) / ((b.t - a.t) / 1000 || 1);
+      eta = samples.length < 2 || rate <= 0 ? "ETA calculating…" : "ETA " + dur((c.total - c.done) / rate);
+    }
+    $("eta").textContent = eta;
+    $("jobs").innerHTML = d.jobs.map((j) => "<li><span>" + j.name.replace(/</g, "&lt;") + "</span><span>" + (j.conclusion || j.status) + "</span></li>").join("");
+    $("runlink").hidden = st !== "failed"; $("runlink").href = d.url;
+    if (last && ["queued","in_progress"].includes(last) && ["completed","failed"].includes(st)) {
+      notify("Andrew TTS", "Run " + LABEL[st].toLowerCase());
+    }
+    last = st;
+    return st;
+  }
+  async function poll(){
+    clearTimeout(timer);
+    try {
+      const st = render(await call("/progress/" + runId));
+      if (st === "queued" || st === "in_progress") timer = setTimeout(poll, 5000);
+    } catch (e) { toast(e.message); timer = setTimeout(poll, 10000); }
+  }
+
+  /* library */
+  let lib = null;
+  async function loadLib(){
+    if (lib) return;
+    $("lib").innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      lib = await call("/releases");
+      $("lib").innerHTML = '<div class="libhead">Audio library</div>' + (lib.length ? lib.map((r) => {
+        const isVideo = r.downloadUrl.toLowerCase().endsWith('.mkv') || r.downloadUrl.toLowerCase().endsWith('.mp4');
+        const mediaTag = isVideo ? '' : '<audio controls preload="none" src="' + r.downloadUrl + '"></audio>';
+        return '<article class="rel"><div class="row"><div><h3>' + r.title + '</h3><p>' + new Date(r.date).toLocaleDateString(undefined, { dateStyle: "medium" }) + " · " + r.size + '</p></div><a class="btn fill" href="' + r.downloadUrl + '">Download</a></div>' + mediaTag + '</article>';
+      }).join("") : '<p class="empty">No releases yet. Generate your first audio.</p>');
+    } catch (e) { $("lib").innerHTML = ""; toast(e.message); }
+  }
+
+  selectMode(mode);
+  if (runId) poll();
 </script>
 </body>
 </html>

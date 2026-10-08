@@ -1,8 +1,8 @@
 const fetch = require('node-fetch');
 
 const GITHUB_TOKEN = process.env.GITHUB_PAT;
-const COORD_URL = process.env.COORD_URL;
-const COORD_SECRET = process.env.COORD_SECRET;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
 const ENGINE_REPO = 'hanshu1202/andrew-tts-engine';
 
 exports.handler = async function(event) {
@@ -47,24 +47,29 @@ exports.handler = async function(event) {
     const jobsData = await jobsResp.json();
     const allJobs = jobsData.jobs || [];
 
-    // Get coordinator status
+    // Get run status via Supabase RPC
     let chunks = { done: 0, total: 0, missing: [] };
-    if (COORD_URL && COORD_SECRET) {
+    if (SUPABASE_URL && SUPABASE_SECRET_KEY) {
       try {
-        const coordResp = await fetch(`${COORD_URL}/status`, {
-          headers: { 'x-auth': COORD_SECRET },
+        const supResp = await fetch(`${SUPABASE_URL}/rest/v1/rpc/run_status`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_SECRET_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({}),
           timeout: 5000
         });
-        if (coordResp.ok) {
-          const coordStatus = await coordResp.json();
+        if (supResp.ok) {
+          const status = await supResp.json();
           chunks = {
-            done: coordStatus.done || 0,
-            total: coordStatus.total || 0,
-            missing: coordStatus.missing || []
+            done: status.done || 0,
+            total: status.total || 0,
+            missing: status.missing || []
           };
         }
       } catch (e) {
-        console.warn('Coordinator fetch failed:', e.message);
+        console.warn('Supabase run_status fetch failed:', e.message);
       }
     }
 
